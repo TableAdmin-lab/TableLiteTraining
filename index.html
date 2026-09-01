@@ -100,10 +100,10 @@
             padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
-            border-radius: 12px;
+            border-radius: 14px;
             background: #0f172a;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .video-wrapper iframe {
@@ -170,48 +170,30 @@
         .modal-overlay { background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(8px); z-index: 1000; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
-        /* Custom Audio Booster Slider */
-        input[type="range"].booster-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 6px;
-            border-radius: 9999px;
-            background: linear-gradient(90deg, #3b82f6 0%, #10b981 50%, #f59e0b 80%, #ef4444 100%);
-            outline: none;
+        /* Video Loading Overlay */
+        .video-loading-overlay {
+            position: absolute; inset: 0; z-index: 5;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+            background: radial-gradient(circle at 50% 40%, rgba(15,23,42,0.92), rgba(2,6,23,0.98));
+            transition: opacity 0.35s ease, visibility 0.35s ease;
         }
-        input[type="range"].booster-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #ffffff;
-            border: 2px solid #3b82f6;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
-            transition: transform 0.15s ease;
+        .video-loading-overlay.hidden-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
+        .stream-spinner {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 3px solid rgba(59, 130, 246, 0.15); border-top-color: #3b82f6;
+            animation: spin 0.85s linear infinite;
         }
-        input[type="range"].booster-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Animated Sound Wave Bars */
-        .eq-bar {
-            width: 3px;
-            height: 8px;
-            background: #3b82f6;
-            border-radius: 2px;
-            transition: height 0.1s ease;
+        /* Prev / Next lesson nav buttons */
+        .lesson-nav-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;
+            color: var(--text-muted); background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease;
         }
-        .eq-bar.active {
-            animation: eqBounce 0.6s ease-in-out infinite alternate;
-        }
-        @keyframes eqBounce {
-            0% { height: 4px; background: #3b82f6; }
-            50% { height: 16px; background: #60a5fa; }
-            100% { height: 22px; background: #38bdf8; }
-        }
+        .lesson-nav-btn:hover:not(:disabled) { color: white; border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.08); }
+        .lesson-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
         /* Toast Container */
         #toastContainer {
@@ -348,80 +330,30 @@
                         <div class="w-full max-w-5xl mx-auto space-y-4">
                             
                             <!-- Video Embed -->
-                            <div class="video-wrapper shadow-2xl ring-1 ring-white/5 bg-slate-900">
-                                <iframe id="drivePlayer" src="" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                            <div class="relative">
+                                <div class="video-wrapper shadow-2xl ring-1 ring-white/5 bg-slate-900" id="videoWrapper">
+                                    <iframe id="drivePlayer" src="" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                                    <div id="videoLoadingOverlay" class="video-loading-overlay hidden-overlay">
+                                        <div class="stream-spinner"></div>
+                                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Loading Stream&hellip;</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- AUDIO BOOSTER CONTROL BAR -->
-                            <div class="bg-slate-900/90 border border-white/10 rounded-2xl p-4 md:p-5 shadow-xl backdrop-blur-md">
-                                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                    
-                                    <!-- Status & Trigger -->
-                                    <div class="flex items-center gap-3">
-                                        <button id="boosterToggleBtn" onclick="toggleAudioBooster()"
-                                            class="relative flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 group">
-                                            <i class="fas fa-volume-high text-sm group-hover:scale-110 transition-transform"></i>
-                                            <span id="boosterBtnText">Enable Audio Booster</span>
-                                        </button>
-
-                                        <!-- EQ Sound Bars Animation -->
-                                        <div class="flex items-end gap-1 h-6 px-2 py-1 bg-slate-950/60 rounded-lg border border-white/5" id="eqVisualizer">
-                                            <div class="eq-bar" style="animation-delay: 0.1s;"></div>
-                                            <div class="eq-bar" style="animation-delay: 0.3s;"></div>
-                                            <div class="eq-bar" style="animation-delay: 0.2s;"></div>
-                                            <div class="eq-bar" style="animation-delay: 0.4s;"></div>
-                                            <div class="eq-bar" style="animation-delay: 0.15s;"></div>
-                                        </div>
-
-                                        <div class="flex flex-col">
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="w-2 h-2 rounded-full bg-slate-600" id="boosterLed"></span>
-                                                <span id="boosterStatusBadge" class="text-[11px] font-bold text-slate-400">Booster Off</span>
-                                            </div>
-                                            <span id="boostDbReadout" class="text-[10px] text-slate-500 font-mono">+0.0 dB Gain</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Slider and Presets -->
-                                    <div class="flex-1 max-w-xl flex flex-col md:flex-row md:items-center gap-3">
-                                        <div class="flex-1 flex flex-col gap-1">
-                                            <div class="flex items-center justify-between text-[11px] font-bold text-slate-300">
-                                                <span class="flex items-center gap-1.5"><i class="fas fa-bolt text-yellow-400"></i> Boost Power</span>
-                                                <span id="boostPercentageLabel" class="text-blue-400 font-mono bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">100%</span>
-                                            </div>
-                                            <input type="range" id="boostSlider" min="100" max="400" step="10" value="100" 
-                                                oninput="onBoosterSliderChange(this.value)" class="booster-slider">
-                                        </div>
-
-                                        <!-- Quick Preset Pills -->
-                                        <div class="flex items-center gap-1.5 flex-wrap">
-                                            <button onclick="setBoostPreset(100)" class="boost-preset-btn px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 active">100%</button>
-                                            <button onclick="setBoostPreset(150)" class="boost-preset-btn px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5">150%</button>
-                                            <button onclick="setBoostPreset(200)" class="boost-preset-btn px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5">200%</button>
-                                            <button onclick="setBoostPreset(300)" class="boost-preset-btn px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5">300%</button>
-                                            <button onclick="setBoostPreset(400)" class="boost-preset-btn px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 text-red-400">400%</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Voice Enhance Toggle -->
-                                    <div class="flex items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-white/5">
-                                        <button id="vocalEnhanceBtn" onclick="toggleVocalEnhancer()" 
-                                            class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 px-3 py-2 rounded-xl text-[11px] font-semibold text-slate-300 border border-white/10 transition-colors">
-                                            <i class="fas fa-microphone-lines text-blue-400" id="vocalIcon"></i>
-                                            <span>Voice Clarity</span>
-                                        </button>
-                                    </div>
-
-                                </div>
-
-                                <!-- Booster Info Tip -->
-                                <div class="mt-3 pt-3 border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-slate-400 gap-2">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-circle-info text-blue-400"></i>
-                                        <span>Click <b>Enable Audio Booster</b>, then select <b>"This Tab"</b> and ensure <b>"Share tab audio"</b> is checked to amplify up to 400%.</span>
-                                    </div>
-                                    <span class="text-slate-500 text-[10px] font-mono">Web Audio Engine v2.4</span>
-                                </div>
+                            <!-- Prev / Next Lesson Navigation -->
+                            <div class="flex items-center justify-between gap-3">
+                                <button id="prevLessonBtn" onclick="stepLesson(-1)" class="lesson-nav-btn" disabled>
+                                    <i class="fas fa-chevron-left text-[10px]"></i>
+                                    <span id="prevLessonLabel">Previous</span>
+                                </button>
+                                <button onclick="reloadCurrentStream()" class="lesson-nav-btn" title="Reload stream if playback fails">
+                                    <i class="fas fa-rotate-right text-[10px]"></i>
+                                    <span>Reload</span>
+                                </button>
+                                <button id="nextLessonBtn" onclick="stepLesson(1)" class="lesson-nav-btn" disabled>
+                                    <span id="nextLessonLabel">Next</span>
+                                    <i class="fas fa-chevron-right text-[10px]"></i>
+                                </button>
                             </div>
 
                             <!-- Lesson Details -->
@@ -634,8 +566,7 @@
             { q: "How do I create a new product on Table by Yoco Lite?", a: "Navigate to Back of House (BOH) > Product & Menu > Finished Good Product to add sellable items, assign prices, and add them to menu categories." },
             { q: "What is the correct way to process a refund?", a: "Use Order History in the Manager menu on your POS device and select the Refund option." },
             { q: "How do I set up kitchen instruction modifiers?", a: "Go to Product & Menu in BOH and configure 'Modifier as an Option Type' to pass prep notes directly to the kitchen." },
-            { q: "How do I assign custom discounts and promotions?", a: "Head to Site Setup > Discounts & Promotions in BOH to configure staff meals, allowances, and discount rules." },
-            { q: "How does the Audio Booster work?", a: "Click 'Enable Audio Booster' and select this tab with audio sharing turned on. You can amplify sound up to 400% and enable Voice Clarity for enhanced speech." }
+            { q: "How do I assign custom discounts and promotions?", a: "Head to Site Setup > Discounts & Promotions in BOH to configure staff meals, allowances, and discount rules." }
         ];
 
         let currentSection = 'boh';
@@ -671,14 +602,12 @@
             notionLink: document.getElementById('notionLinkElement'),
             resourceTitle: document.getElementById('resourceTitle'),
             resourceIcon: document.getElementById('resourceIcon'),
-            boostSlider: document.getElementById('boostSlider'),
-            boostPercentageLabel: document.getElementById('boostPercentageLabel'),
-            boosterBtnText: document.getElementById('boosterBtnText'),
-            boosterLed: document.getElementById('boosterLed'),
-            boosterStatusBadge: document.getElementById('boosterStatusBadge'),
-            boostDbReadout: document.getElementById('boostDbReadout'),
-            vocalEnhanceBtn: document.getElementById('vocalEnhanceBtn'),
-            vocalIcon: document.getElementById('vocalIcon')
+            videoLoadingOverlay: document.getElementById('videoLoadingOverlay'),
+            drivePlayerFrame: document.getElementById('drivePlayer'),
+            prevLessonBtn: document.getElementById('prevLessonBtn'),
+            nextLessonBtn: document.getElementById('nextLessonBtn'),
+            prevLessonLabel: document.getElementById('prevLessonLabel'),
+            nextLessonLabel: document.getElementById('nextLessonLabel')
         };
 
         // --- TOAST NOTIFICATIONS ---
@@ -706,232 +635,26 @@
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateY(10px)';
                 setTimeout(() => toast.remove(), 300);
-            }, 4000);
+            }, 4500);
         }
 
-        // --- WEB AUDIO BOOSTER ENGINE ---
-        let audioCtx = null;
-        let gainNode = null;
-        let compressorNode = null;
-        let voiceFilterNode = null;
-        let analyserNode = null;
-        let audioStream = null;
-        let isAudioBoosterActive = false;
-        let currentBoostValue = 100; // 100 to 400
-        let isVocalEnhanceActive = false;
-        let eqAnimFrame = null;
-
-        async function toggleAudioBooster() {
-            if (!isAudioBoosterActive) {
-                try {
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    if (!audioCtx) audioCtx = new AudioContextClass();
-                    if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                        showToast("Tab audio capture is not supported on this device/browser.", "error");
-                        return;
-                    }
-
-                    showToast("Please choose 'This Tab' and check 'Share tab audio' in the browser popup.", "info");
-
-                    const stream = await navigator.mediaDevices.getDisplayMedia({
-                        video: true,
-                        audio: {
-                            echoCancellation: false,
-                            noiseSuppression: false,
-                            autoGainControl: false
-                        }
-                    });
-
-                    const audioTracks = stream.getAudioTracks();
-                    if (!audioTracks || audioTracks.length === 0) {
-                        showToast("No audio track detected. Ensure 'Share tab audio' is enabled.", "warning");
-                        stream.getTracks().forEach(t => t.stop());
-                        return;
-                    }
-
-                    // Stop video tracks to conserve CPU
-                    stream.getVideoTracks().forEach(t => t.stop());
-                    audioStream = stream;
-
-                    const source = audioCtx.createMediaStreamSource(new MediaStream(audioTracks));
-
-                    // 1. Gain Node (1x to 4x multiplier)
-                    gainNode = audioCtx.createGain();
-                    gainNode.gain.value = currentBoostValue / 100;
-
-                    // 2. Dynamics Compressor (Limiter) to prevent loud clipping
-                    compressorNode = audioCtx.createDynamicsCompressor();
-                    compressorNode.threshold.setValueAtTime(-14, audioCtx.currentTime);
-                    compressorNode.knee.setValueAtTime(24, audioCtx.currentTime);
-                    compressorNode.ratio.setValueAtTime(10, audioCtx.currentTime);
-                    compressorNode.attack.setValueAtTime(0.003, audioCtx.currentTime);
-                    compressorNode.release.setValueAtTime(0.2, audioCtx.currentTime);
-
-                    // 3. Peaking Voice Filter for Speech Clarity
-                    voiceFilterNode = audioCtx.createBiquadFilter();
-                    voiceFilterNode.type = 'peaking';
-                    voiceFilterNode.frequency.value = 2500;
-                    voiceFilterNode.Q.value = 1.0;
-                    voiceFilterNode.gain.value = isVocalEnhanceActive ? 6 : 0;
-
-                    // 4. Analyser for Real-Time Visualizer
-                    analyserNode = audioCtx.createAnalyser();
-                    analyserNode.fftSize = 64;
-
-                    // Routing: source -> voiceFilter -> gainNode -> compressor -> destination & analyser
-                    source.connect(voiceFilterNode);
-                    voiceFilterNode.connect(gainNode);
-                    gainNode.connect(compressorNode);
-                    compressorNode.connect(analyserNode);
-                    compressorNode.connect(audioCtx.destination);
-
-                    isAudioBoosterActive = true;
-                    updateBoosterStateUI(true);
-                    startEqVisualizer();
-                    showToast(`Audio Booster activated at ${currentBoostValue}%!`, "success");
-
-                    audioTracks[0].onended = () => {
-                        stopAudioBooster();
-                    };
-                } catch (err) {
-                    console.error("Audio Booster init error:", err);
-                    if (err.name !== 'NotAllowedError') {
-                        showToast("Could not activate booster: " + (err.message || "Unknown issue"), "error");
-                    }
-                    stopAudioBooster();
-                }
-            } else {
-                stopAudioBooster();
-            }
-        }
-
-        function stopAudioBooster() {
-            if (audioStream) {
-                audioStream.getTracks().forEach(t => t.stop());
-                audioStream = null;
-            }
-            if (gainNode) {
-                gainNode.disconnect();
-                gainNode = null;
-            }
-            if (eqAnimFrame) {
-                cancelAnimationFrame(eqAnimFrame);
-                eqAnimFrame = null;
-            }
-            isAudioBoosterActive = false;
-            updateBoosterStateUI(false);
-            resetEqBars();
-            showToast("Audio Booster deactivated.", "info");
-        }
-
-        function onBoosterSliderChange(val) {
-            currentBoostValue = parseInt(val, 10);
-            updateBoostDisplay();
-            if (gainNode && audioCtx) {
-                gainNode.gain.setValueAtTime(currentBoostValue / 100, audioCtx.currentTime);
-            }
-            updatePresetButtons(currentBoostValue);
-        }
-
-        function setBoostPreset(val) {
-            dom.boostSlider.value = val;
-            onBoosterSliderChange(val);
-        }
-
-        function updateBoostDisplay() {
-            dom.boostPercentageLabel.innerText = `${currentBoostValue}%`;
-            // Calculate approximate dB gain: 20 * log10(gain)
-            const dbGain = (20 * Math.log10(currentBoostValue / 100)).toFixed(1);
-            dom.boostDbReadout.innerText = `+${dbGain} dB Gain`;
-        }
-
-        function updatePresetButtons(val) {
-            document.querySelectorAll('.boost-preset-btn').forEach(btn => {
-                const btnVal = parseInt(btn.innerText.replace('%', ''), 10);
-                if (btnVal === val) {
-                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500');
-                    btn.classList.remove('bg-slate-800', 'text-slate-300');
-                } else {
-                    btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500');
-                    btn.classList.add('bg-slate-800', 'text-slate-300');
-                }
-            });
-        }
-
-        function toggleVocalEnhancer() {
-            isVocalEnhanceActive = !isVocalEnhanceActive;
-            if (voiceFilterNode && audioCtx) {
-                voiceFilterNode.gain.setValueAtTime(isVocalEnhanceActive ? 6 : 0, audioCtx.currentTime);
-            }
-            if (isVocalEnhanceActive) {
-                dom.vocalEnhanceBtn.classList.add('bg-blue-600/30', 'border-blue-500/50', 'text-blue-300');
-                dom.vocalIcon.className = "fas fa-microphone-lines text-blue-400";
-                showToast("Voice Clarity Enhancer enabled (+6dB vocal boost).", "success");
-            } else {
-                dom.vocalEnhanceBtn.classList.remove('bg-blue-600/30', 'border-blue-500/50', 'text-blue-300');
-                dom.vocalIcon.className = "fas fa-microphone-lines text-slate-500";
-                showToast("Voice Clarity Enhancer turned off.", "info");
-            }
-        }
-
-        function updateBoosterStateUI(active) {
-            const toggleBtn = document.getElementById('boosterToggleBtn');
-            if (active) {
-                toggleBtn.classList.remove('from-blue-600', 'to-indigo-600');
-                toggleBtn.classList.add('from-emerald-600', 'to-teal-600', 'shadow-emerald-500/20');
-                dom.boosterBtnText.innerText = "Booster Active (Stop)";
-                dom.boosterLed.className = "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse";
-                dom.boosterStatusBadge.innerText = "Amplifying Sound";
-                dom.boosterStatusBadge.className = "text-[11px] font-bold text-emerald-400";
-            } else {
-                toggleBtn.classList.add('from-blue-600', 'to-indigo-600');
-                toggleBtn.classList.remove('from-emerald-600', 'to-teal-600', 'shadow-emerald-500/20');
-                dom.boosterBtnText.innerText = "Enable Audio Booster";
-                dom.boosterLed.className = "w-2 h-2 rounded-full bg-slate-600";
-                dom.boosterStatusBadge.innerText = "Booster Off";
-                dom.boosterStatusBadge.className = "text-[11px] font-bold text-slate-400";
-            }
-        }
-
-        function startEqVisualizer() {
-            if (!analyserNode) return;
-            const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-            const bars = document.querySelectorAll('#eqVisualizer .eq-bar');
-
-            function render() {
-                if (!isAudioBoosterActive) return;
-                analyserNode.getByteFrequencyData(dataArray);
-                bars.forEach((bar, i) => {
-                    const idx = Math.min(i * 3, dataArray.length - 1);
-                    const val = dataArray[idx] || 0;
-                    const height = Math.max(4, Math.min(22, (val / 255) * 22));
-                    bar.style.height = `${height}px`;
-                    if (val > 140) bar.style.background = '#60a5fa';
-                    else if (val > 200) bar.style.background = '#38bdf8';
-                    else bar.style.background = '#3b82f6';
-                });
-                eqAnimFrame = requestAnimationFrame(render);
-            }
-            render();
-        }
-
-        function resetEqBars() {
-            const bars = document.querySelectorAll('#eqVisualizer .eq-bar');
-            bars.forEach(bar => {
-                bar.style.height = '4px';
-                bar.style.background = '#3b82f6';
-            });
-        }
 
         // --- APP INITIALIZATION ---
         window.onload = () => {
             switchSection('boh');
             renderSidebarFAQs();
             renderKnowledgeBase();
-            updateBoostDisplay();
-            updatePresetButtons(100);
+
+            // Wire up loading overlay + error fallback for the streaming iframe
+            if (dom.drivePlayerFrame) {
+                dom.drivePlayerFrame.addEventListener('load', () => {
+                    if (dom.drivePlayerFrame.src) {
+                        clearTimeout(window._loadingOverlayFallback);
+                        dom.videoLoadingOverlay.classList.add('hidden-overlay');
+                    }
+                });
+            }
+
             dom.notionLink.addEventListener('click', () => {
                 if (activeVideo && window.trackResourceClick) {
                     window.trackResourceClick(activeVideo, _sessionId);
@@ -996,10 +719,10 @@
         function renderList(items) {
             dom.desktopCount.innerText = `${items.length} Lesson${items.length !== 1 ? 's' : ''}`;
             dom.desktopList.innerHTML = items.map(vid => `
-                <div class="playlist-item p-2 rounded-lg cursor-pointer mb-1 relative" onclick='loadVideo(${JSON.stringify(vid).replace(/'/g, "&apos;")}, this)'>
+                <div class="playlist-item p-2 rounded-lg cursor-pointer mb-1 relative" data-vid-id="${vid.id}" onclick='loadVideo(${JSON.stringify(vid).replace(/'/g, "&apos;")}, this)'>
                     <div class="flex items-center gap-3">
                         <div class="flex-none w-20 h-12 rounded-md overflow-hidden bg-slate-800 relative">
-                            <img src="https://drive.google.com/thumbnail?id=${vid.id}&sz=w300" class="w-full h-full object-cover opacity-70">
+                            <img src="https://drive.google.com/thumbnail?id=${vid.id}&sz=w300" class="w-full h-full object-cover opacity-70" loading="lazy">
                             <i class="fas fa-play absolute bottom-1 left-1.5 text-[8px] text-white opacity-80"></i>
                         </div>
                         <div class="flex-1 min-w-0">
@@ -1009,17 +732,74 @@
                     </div>
                 </div>
             `).join('');
+            // Re-apply active highlight in case the currently playing video is still in view after a re-render
+            if (activeVideo) {
+                const match = dom.desktopList.querySelector(`[data-vid-id="${activeVideo.id}"]`);
+                if (match) match.classList.add('active-video');
+            }
+            updateLessonNavButtons();
         }
+
+        // Returns the lesson list under the current section/category filter (ignores search),
+        // used for sequential Previous/Next navigation through the player.
+        function getFilteredList() {
+            return videos.filter(v => v.section === currentSection && (currentCategory === 'all' || v.category === currentCategory));
+        }
+
+        function updateLessonNavButtons() {
+            if (!dom.prevLessonBtn || !dom.nextLessonBtn) return;
+            const list = getFilteredList();
+            const idx = activeVideo ? list.findIndex(v => v.id === activeVideo.id) : -1;
+            const hasPrev = idx > 0;
+            const hasNext = idx > -1 && idx < list.length - 1;
+            dom.prevLessonBtn.disabled = !hasPrev;
+            dom.nextLessonBtn.disabled = !hasNext;
+            dom.prevLessonLabel.innerText = hasPrev ? truncateTitle(list[idx - 1].title) : 'Previous';
+            dom.nextLessonLabel.innerText = hasNext ? truncateTitle(list[idx + 1].title) : 'Next';
+        }
+
+        function truncateTitle(title) {
+            return title.length > 22 ? title.slice(0, 20) + '…' : title;
+        }
+
+        function stepLesson(direction) {
+            const list = getFilteredList();
+            const idx = activeVideo ? list.findIndex(v => v.id === activeVideo.id) : -1;
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= list.length) return;
+            const targetEl = dom.desktopList.querySelector(`[data-vid-id="${list[targetIdx].id}"]`);
+            loadVideo(list[targetIdx], targetEl);
+        }
+
+        // Re-requests the current lesson's stream — handy if a Drive embed stalls mid-playback
+        function reloadCurrentStream() {
+            if (!activeVideo) {
+                showToast("Select a lesson first.", "info");
+                return;
+            }
+            dom.videoLoadingOverlay.classList.remove('hidden-overlay');
+            const src = `https://drive.google.com/file/d/${activeVideo.id}/preview?reload=${Date.now()}`;
+            dom.drivePlayer.src = src.split('?')[0]; // Drive ignores the cache-buster param but the reassignment forces a fresh load
+            showToast("Reloading stream…", "info");
+        }
+
+        const LAST_VIDEO_KEY = 'tp_lastVideoId';
 
         function loadVideo(vid, element, trackPlay = true) {
             switchView('main');
             activeVideo = vid;
+
+            dom.videoLoadingOverlay.classList.remove('hidden-overlay');
             dom.drivePlayer.src = `https://drive.google.com/file/d/${vid.id}/preview`;
+            clearTimeout(window._loadingOverlayFallback);
+            window._loadingOverlayFallback = setTimeout(() => dom.videoLoadingOverlay.classList.add('hidden-overlay'), 8000);
             dom.playerTitle.innerText = vid.title;
             dom.playerSectionTag.innerText = vid.section === 'boh' ? 'Back of House' : 'Front of House';
             dom.playerCategoryTag.innerText = getCategoryLabel(vid.category);
             dom.playerDesc.innerText = vid.description;
             dom.externalLink.href = `https://drive.google.com/file/d/${vid.id}/view`;
+
+            try { localStorage.setItem(LAST_VIDEO_KEY, vid.id); } catch (e) { /* storage unavailable, non-fatal */ }
 
             if (trackPlay && window.trackVideoPlay) window.trackVideoPlay(vid, _sessionId);
 
@@ -1032,7 +812,10 @@
             } else dom.notionContainer.classList.add('hidden');
 
             document.querySelectorAll('.playlist-item').forEach(el => el.classList.remove('active-video'));
-            if (element) element.classList.add('active-video');
+            const targetEl = element || dom.desktopList.querySelector(`[data-vid-id="${vid.id}"]`);
+            if (targetEl) targetEl.classList.add('active-video');
+
+            updateLessonNavButtons();
         }
 
         const _sessionId = (() => {
